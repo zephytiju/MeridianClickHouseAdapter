@@ -20,8 +20,8 @@ jobs:
     name: Quality and unit conformance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -37,7 +37,7 @@ jobs:
           --cov-report=term-missing
           --cov-report=xml
           --cov-fail-under=85
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.xml
@@ -50,8 +50,8 @@ jobs:
       matrix:
         python-version: ["3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -63,8 +63,8 @@ jobs:
     name: Reproducible package artifacts
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -92,7 +92,7 @@ jobs:
           wheel-smoke/bin/python -m pip install --upgrade pip
           wheel-smoke/bin/python -m pip install dist-a/*.whl
           wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.0.0'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: |
@@ -104,8 +104,8 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -113,7 +113,7 @@ jobs:
       - run: .venv/bin/python -m pip install --upgrade pip
       - run: .venv/bin/python -m pip install -e ".[test]"
       - run: ./scripts/run-standalone-conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: standalone-engine-evidence
@@ -125,8 +125,8 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -134,7 +134,7 @@ jobs:
       - run: .venv/bin/python -m pip install --upgrade pip
       - run: .venv/bin/python -m pip install -e ".[test]"
       - run: ./scripts/run-cluster-conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: replicated-engine-evidence
