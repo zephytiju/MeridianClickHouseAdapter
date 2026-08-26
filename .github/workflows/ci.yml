@@ -37,7 +37,7 @@ jobs:
           --cov-report=term-missing
           --cov-report=xml
           --cov-fail-under=85
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.xml
@@ -92,7 +92,7 @@ jobs:
           wheel-smoke/bin/python -m pip install --upgrade pip
           wheel-smoke/bin/python -m pip install dist-a/*.whl
           wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.0.0'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: |
@@ -113,7 +113,7 @@ jobs:
       - run: .venv/bin/python -m pip install --upgrade pip
       - run: .venv/bin/python -m pip install -e ".[test]"
       - run: ./scripts/run-standalone-conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: standalone-engine-evidence
@@ -134,7 +134,7 @@ jobs:
       - run: .venv/bin/python -m pip install --upgrade pip
       - run: .venv/bin/python -m pip install -e ".[test]"
       - run: ./scripts/run-cluster-conformance.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: replicated-engine-evidence
