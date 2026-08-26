@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  keeper:
+    image: clickhouse/clickhouse-keeper@sha256:2c8b97bb628999adfa597172091ce495304e0a260d791fe6e475d64a314193b4
+    volumes:
+      - ./config/keeper.xml:/etc/clickhouse-keeper/keeper_config.xml:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "9181"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    tmpfs:
+      - /var/lib/clickhouse-keeper
+      - /var/log/clickhouse-keeper
+
+  clickhouse-1:
+    image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+    depends_on:
+      keeper:
+        condition: service_healthy
+    environment:
+      CLICKHOUSE_USER: meridian
+      CLICKHOUSE_PASSWORD: meridian-test
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - ./config/common.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - ./config/replica-1.xml:/etc/clickhouse-server/config.d/macros.xml:ro
+    ports:
+      - "18123:8123"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    tmpfs:
+      - /var/lib/clickhouse
+      - /var/log/clickhouse-server
+
+  clickhouse-2:
+    image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+    depends_on:
+      keeper:
+        condition: service_healthy
+    environment:
+      CLICKHOUSE_USER: meridian
+      CLICKHOUSE_PASSWORD: meridian-test
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - ./config/common.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - ./config/replica-2.xml:/etc/clickhouse-server/config.d/macros.xml:ro
+    ports:
+      - "18124:8123"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    tmpfs:
+      - /var/lib/clickhouse
+      - /var/log/clickhouse-server

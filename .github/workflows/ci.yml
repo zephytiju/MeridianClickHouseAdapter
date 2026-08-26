@@ -1,0 +1,142 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality and unit conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy src
+      - name: Unit and contract tests
+        run: >-
+          pytest tests/unit tests/contract
+          --cov=meridian_storage.adapters.clickhouse
+          --cov-report=term-missing
+          --cov-report=xml
+          --cov-fail-under=85
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+
+  python-compatibility:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - run: pytest tests/unit tests/contract
+
+  package:
+    name: Reproducible package artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[test]"
+      - name: Build twice with a fixed epoch
+        env:
+          SOURCE_DATE_EPOCH: "1724544000"
+        run: |
+          python -m build --sdist --wheel --outdir dist-a
+          python -m build --sdist --wheel --outdir dist-b
+      - name: Verify reproducibility
+        run: |
+          sha256sum dist-a/* | sed 's#dist-a/##' > dist-a.sha256
+          sha256sum dist-b/* | sed 's#dist-b/##' > dist-b.sha256
+          diff -u dist-a.sha256 dist-b.sha256
+      - run: python -m twine check dist-a/*
+      - name: Inspect artifact contents and metadata
+        env:
+          MERIDIAN_DIST_DIR: dist-a
+        run: pytest tests/packaging
+      - name: Wheel installation smoke test
+        run: |
+          python -m venv wheel-smoke
+          wheel-smoke/bin/python -m pip install --upgrade pip
+          wheel-smoke/bin/python -m pip install dist-a/*.whl
+          wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.0.0'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: |
+            dist-a/*
+            dist-a.sha256
+
+  standalone:
+    name: ClickHouse 25.3 standalone
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install --upgrade pip
+      - run: .venv/bin/python -m pip install -e ".[test]"
+      - run: ./scripts/run-standalone-conformance.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standalone-engine-evidence
+          path: build/evidence/standalone.json
+          if-no-files-found: error
+
+  replicated:
+    name: ClickHouse 25.3 replicated
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m venv .venv
+      - run: .venv/bin/python -m pip install --upgrade pip
+      - run: .venv/bin/python -m pip install -e ".[test]"
+      - run: ./scripts/run-cluster-conformance.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: replicated-engine-evidence
+          path: build/evidence/replicated.json
+          if-no-files-found: error

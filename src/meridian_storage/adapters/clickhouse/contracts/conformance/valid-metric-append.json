@@ -1,0 +1,21 @@
+{
+  "formatVersion": "meridian.clickhouse.conformance.v1",
+  "caseId": "metric-append-eventual-v1",
+  "catalog": "evidence",
+  "operationContract": "meridian.evidence.append",
+  "recordProfile": "metric",
+  "scope": {"tenant": "tenant-a", "region": "us-west"},
+  "records": [
+    {
+      "observed_at": "2026-08-25T12:00:00Z",
+      "series_id": "series-1",
+      "service": "checkout",
+      "value": 42.5
+    }
+  ],
+  "expected": {
+    "acceptedRows": 1,
+    "visibility": "eventual",
+    "deduplication": "retry-window"
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meridian.storage/contracts/meridian-clickhouse-layout.v1.schema.json",
+  "title": "Meridian ClickHouse physical layout v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "resource",
+    "table",
+    "recordProfile",
+    "schemaVersion",
+    "resourceFingerprint",
+    "schemaFingerprint",
+    "columns",
+    "timestampField",
+    "identityFields",
+    "dimensionFields",
+    "measurementFields",
+    "retentionSeconds",
+    "partitionInterval",
+    "topology",
+    "queryFinal",
+    "administrativeProfiles",
+    "indexes",
+    "layoutFingerprint"
+  ],
+  "properties": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["catalog", "namespace", "name"],
+      "properties": {
+        "catalog": {"enum": ["structured", "evidence"]},
+        "namespace": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1}
+      }
+    },
+    "table": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,126}$"},
+    "recordProfile": {
+      "enum": ["log", "span", "metric", "usage", "cost", "time-series", "analytical"]
+    },
+    "schemaVersion": {"type": "string", "minLength": 1},
+    "resourceFingerprint": {"$ref": "#/$defs/fingerprint"},
+    "schemaFingerprint": {"$ref": "#/$defs/fingerprint"},
+    "columns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["logicalName", "physicalName", "logicalType", "clickhouseType", "nullable", "many"],
+        "properties": {
+          "logicalName": {"type": "string", "minLength": 1},
+          "physicalName": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,126}$"},
+          "logicalType": {},
+          "clickhouseType": {"type": "string", "minLength": 1},
+          "nullable": {"type": "boolean"},
+          "many": {"type": "boolean"}
+        }
+      }
+    },
+    "timestampField": {"type": "string", "minLength": 1},
+    "identityFields": {"$ref": "#/$defs/strings"},
+    "dimensionFields": {"$ref": "#/$defs/strings"},
+    "measurementFields": {"$ref": "#/$defs/strings"},
+    "retentionSeconds": {"type": ["integer", "null"], "minimum": 1},
+    "partitionInterval": {"enum": ["hour", "day", "month"]},
+    "topology": {"enum": ["clickhouse-standalone", "clickhouse-replicated"]},
+    "queryFinal": {"type": "boolean"},
+    "administrativeProfiles": {"$ref": "#/$defs/strings"},
+    "indexes": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/strings"}
+    },
+    "layoutFingerprint": {"$ref": "#/$defs/fingerprint"}
+  },
+  "$defs": {
+    "fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "strings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

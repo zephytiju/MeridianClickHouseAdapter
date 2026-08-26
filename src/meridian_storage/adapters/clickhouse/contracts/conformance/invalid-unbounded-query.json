@@ -1,0 +1,8 @@
+{
+  "formatVersion": "meridian.clickhouse.conformance.v1",
+  "caseId": "reject-unbounded-query-v1",
+  "catalog": "evidence",
+  "operationContract": "meridian.evidence.query",
+  "where": {"service": "checkout"},
+  "expectedError": "MERIDIAN_OPERATION_INVALID"
+}

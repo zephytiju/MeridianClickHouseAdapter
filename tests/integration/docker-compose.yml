@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+    environment:
+      CLICKHOUSE_USER: meridian
+      CLICKHOUSE_PASSWORD: meridian-test
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ports:
+      - "18123:8123"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8123/ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 60
+    tmpfs:
+      - /var/lib/clickhouse
+      - /var/log/clickhouse-server

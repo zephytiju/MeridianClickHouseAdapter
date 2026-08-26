@@ -1,0 +1,36 @@
+{
+  "formatVersion": "meridian.clickhouse.engine-evidence.v1",
+  "profile": "clickhouse-replicated",
+  "engineSelection": "25.3",
+  "observedEngineVersion": "25.3.14.14",
+  "serverImage": "clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2",
+  "keeperImage": "clickhouse/clickhouse-keeper@sha256:2c8b97bb628999adfa597172091ce495304e0a260d791fe6e475d64a314193b4",
+  "topology": {
+    "keepers": 1,
+    "shards": 1,
+    "replicas": 2
+  },
+  "runner": "meridian-storage-core/1.0.0:run_adapter_conformance",
+  "report": {
+    "adapterContractVersion": "1.0.0",
+    "adapterId": "meridian.storage.clickhouse",
+    "capabilityFingerprint": "sha256:40cff76df5c24300d40d0495c2c42c006e23940e10c952ef7864e630f1f36c90",
+    "checks": [
+      "authenticated-open",
+      "deterministic-capability-manifest",
+      "deterministic-physical-verification",
+      "normalized-execution"
+    ],
+    "engineProfile": "clickhouse-replicated",
+    "engineVersion": "25.3",
+    "physicalFingerprint": "sha256:ec9b3b826ace9139eafa2b1c58b4c497b4924439902a183de5bb64888d400459",
+    "resourceCount": 1
+  },
+  "additionalChecks": [
+    "active-replica-set",
+    "replica-1-write",
+    "replica-2-read",
+    "replicated-engine-probe",
+    "keeper-backed-ddl"
+  ]
+}
