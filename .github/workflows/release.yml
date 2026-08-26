@@ -19,8 +19,8 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -34,16 +34,16 @@ jobs:
         run: python -c "from pathlib import Path; namespace = {}; exec(Path('src/meridian_storage/adapters/clickhouse/_version.py').read_text(), namespace); assert '${{ github.ref_name }}' == 'v' + namespace['__version__']"
       - run: python -m twine check dist/*
       - run: sha256sum dist/*.whl dist/*.tar.gz > SHA256SUMS
-      - uses: actions/attest-build-provenance@v2
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: distributions
           path: |
             dist/*.whl
             dist/*.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: checksums
           path: SHA256SUMS
@@ -55,11 +55,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: distributions
           path: dist
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: checksums
           path: dist
@@ -78,7 +78,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: distributions
           path: dist
