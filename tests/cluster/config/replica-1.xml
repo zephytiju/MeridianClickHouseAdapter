@@ -1,0 +1,7 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<clickhouse>
+  <macros>
+    <shard>01</shard>
+    <replica>replica-1</replica>
+  </macros>
+</clickhouse>

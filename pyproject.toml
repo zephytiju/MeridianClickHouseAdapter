@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "meridian-storage-clickhouse"
+dynamic = ["version"]
+description = "ClickHouse adapter for Meridian V1 evidence and time-series operations"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Meridian contributors" }]
+keywords = ["adapter", "analytics", "clickhouse", "meridian", "observability", "time-series"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
+dependencies = [
+  "clickhouse-connect>=0.15,<0.16",
+  "meridian-storage-core==1.0.0",
+  "meridian-storage-query==1.0.0",
+  "meridian-storage-semantics==1.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "build>=1.2,<2",
+  "hatchling==1.27.0",
+  "hypothesis>=6.135,<7",
+  "jsonschema>=4.23,<5",
+  "mypy>=1.15,<2",
+  "packaging>=24,<27",
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<8",
+  "ruff>=0.11,<1",
+  "twine>=6,<7",
+]
+
+[project.entry-points."meridian_storage.adapters"]
+clickhouse = "meridian_storage.adapters.clickhouse:ClickHouseAdapterFactory"
+
+[project.urls]
+Documentation = "https://github.com/zephytiju/meridian-storage-clickhouse#readme"
+Issues = "https://github.com/zephytiju/meridian-storage-clickhouse/issues"
+Repository = "https://github.com/zephytiju/meridian-storage-clickhouse"
+
+[tool.hatch.version]
+path = "src/meridian_storage/adapters/clickhouse/_version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/CHANGELOG.md",
+  "/docs",
+  "/evidence",
+  "/LICENSE",
+  "/NOTICE",
+  "/pyproject.toml",
+  "/README.md",
+  "/requirements.lock",
+  "/SECURITY.md",
+  "/src",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/meridian_storage"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers -ra"
+testpaths = ["tests"]
+markers = [
+  "integration: requires a real standalone ClickHouse server",
+  "cluster: requires the disposable replicated ClickHouse/Keeper profile",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["meridian_storage.adapters.clickhouse"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+packages = ["meridian_storage.adapters.clickhouse"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["A", "B", "C4", "E", "F", "I", "N", "PERF", "PIE", "PYI", "RUF", "S", "SIM", "UP"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S105", "S106", "S107", "S608"]
+"src/meridian_storage/adapters/clickhouse/query/compiler.py" = ["S608"]
+"src/meridian_storage/adapters/clickhouse/probe/health.py" = ["S608"]
+
+[tool.ruff.format]
+quote-style = "double"

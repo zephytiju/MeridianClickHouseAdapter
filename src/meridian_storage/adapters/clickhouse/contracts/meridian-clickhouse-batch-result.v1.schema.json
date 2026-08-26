@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://meridian.storage/contracts/meridian-clickhouse-batch-result.v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["acceptedRows", "batchId", "visibility"],
+  "properties": {
+    "acceptedRows": {"type": "integer", "minimum": 1},
+    "batchId": {"type": "string", "pattern": "^mb1_[0-9a-f]{64}$"},
+    "visibility": {"const": "eventual"}
+  }
+}

@@ -1,0 +1,25 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<clickhouse>
+  <listen_host>0.0.0.0</listen_host>
+  <zookeeper>
+    <node>
+      <host>keeper</host>
+      <port>9181</port>
+    </node>
+  </zookeeper>
+  <remote_servers>
+    <meridian_cluster>
+      <shard>
+        <internal_replication>true</internal_replication>
+        <replica>
+          <host>clickhouse-1</host>
+          <port>9000</port>
+        </replica>
+        <replica>
+          <host>clickhouse-2</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+    </meridian_cluster>
+  </remote_servers>
+</clickhouse>

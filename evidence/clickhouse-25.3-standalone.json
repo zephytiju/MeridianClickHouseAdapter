@@ -1,0 +1,30 @@
+{
+  "formatVersion": "meridian.clickhouse.engine-evidence.v1",
+  "profile": "clickhouse-standalone",
+  "engineSelection": "25.3",
+  "observedEngineVersion": "25.3.14.14",
+  "serverImage": "clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2",
+  "runner": "meridian-storage-core/1.0.0:run_adapter_conformance",
+  "report": {
+    "adapterContractVersion": "1.0.0",
+    "adapterId": "meridian.storage.clickhouse",
+    "capabilityFingerprint": "sha256:3e8ae60a11b10e19a1267561c53e8258b3b95db03d007285a456d3e02e5e7f16",
+    "checks": [
+      "authenticated-open",
+      "deterministic-capability-manifest",
+      "deterministic-physical-verification",
+      "normalized-execution"
+    ],
+    "engineProfile": "clickhouse-standalone",
+    "engineVersion": "25.3",
+    "physicalFingerprint": "sha256:a4dca6f8709b9528d24f3f298e2623381e01c6eb7ce5e53b0e42861fae970fc6",
+    "resourceCount": 1
+  },
+  "additionalChecks": [
+    "bounded-time-range-required",
+    "exact-quantile-p99-pushdown",
+    "retry-token-stability",
+    "scope-isolation",
+    "ttl-ddl-accepted"
+  ]
+}

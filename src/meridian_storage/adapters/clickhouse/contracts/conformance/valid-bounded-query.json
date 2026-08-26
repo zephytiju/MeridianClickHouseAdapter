@@ -1,0 +1,19 @@
+{
+  "formatVersion": "meridian.clickhouse.conformance.v1",
+  "caseId": "bounded-scope-first-query-v1",
+  "catalog": "evidence",
+  "operationContract": "meridian.evidence.query",
+  "where": {
+    "observed_at": {
+      "gte": "2026-08-25T00:00:00Z",
+      "lt": "2026-08-26T00:00:00Z"
+    }
+  },
+  "orderBy": [{"field": "observed_at", "direction": "desc"}],
+  "limit": 50,
+  "expected": {
+    "scopePredicate": "first",
+    "cursor": "signed-live-keyset",
+    "maximumRangeSeconds": 86400
+  }
+}
