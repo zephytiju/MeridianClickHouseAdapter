@@ -50,9 +50,9 @@ test = [
 clickhouse = "meridian_storage.adapters.clickhouse:ClickHouseAdapterFactory"
 
 [project.urls]
-Documentation = "https://github.com/zephytiju/meridian-storage-clickhouse#readme"
-Issues = "https://github.com/zephytiju/meridian-storage-clickhouse/issues"
-Repository = "https://github.com/zephytiju/meridian-storage-clickhouse"
+Documentation = "https://github.com/zephytiju/MeridianClickHouseAdapter#readme"
+Issues = "https://github.com/zephytiju/MeridianClickHouseAdapter/issues"
+Repository = "https://github.com/zephytiju/MeridianClickHouseAdapter"
 
 [tool.hatch.version]
 path = "src/meridian_storage/adapters/clickhouse/_version.py"
