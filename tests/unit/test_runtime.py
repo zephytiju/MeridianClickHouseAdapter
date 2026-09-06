@@ -359,3 +359,34 @@ def test_structured_put_rejects_conditional_version(layout) -> None:  # type: ig
     )
     with pytest.raises(ValidationError):
         session.execute(request)
+
+
+@pytest.mark.parametrize("mode", ["if_absent", "update", "upsert"])
+def test_structured_put_v2_rejected_before_driver(mode: str) -> None:
+    from dataclasses import replace
+
+    from meridian_storage.errors import CompatibilityError
+
+    structured = build_layout(catalog="structured")
+    fake = FakeClient(structured)
+    factory, context = _factory_context(structured, fake)
+    runtime = factory.create(context)
+    runtime.open()
+    session = runtime.open_session(transactional=False)
+    request = build_request(structured)
+    request = replace(
+        request,
+        operation=replace(
+            request.operation,
+            operation_contract="meridian.structured.put",
+            operation_version="2.0.0",
+            input={"data": sample_record(), "mode": mode},
+        ),
+    )
+    try:
+        with pytest.raises(CompatibilityError):
+            session.execute(request)
+        assert fake.inserts == []
+    finally:
+        session.close()
+        runtime.close()

@@ -13,9 +13,10 @@ migration plans, bounded idempotent batch ingestion, mandatory time-bounded quer
 live keyset pagination, result normalization, authenticated probes, and physical fingerprints.
 
 The distribution contributes exactly one adapter package,
-`meridian_storage.adapters.clickhouse`, and discovers through the released Meridian Core 1.0.0
-Adapter SPI. It consumes only the released `meridian-storage-core`,
-`meridian-storage-semantics`, and `meridian-storage-query` 1.0.0 contracts.
+`meridian_storage.adapters.clickhouse`, and discovers through the released Meridian Core 1.0.1
+Adapter SPI. It consumes only the released `meridian-storage-core==1.0.1`,
+`meridian-storage-semantics==2.0.0`, and `meridian-storage-query==1.0.2` packages.
+Adapter, layout, append, and Query plan contract versions remain unchanged.
 
 ## Boundary
 
