@@ -240,3 +240,89 @@ def _write_evidence(profile: str, document: object) -> None:
         json.dumps(document, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+@pytest.mark.parametrize("name", ["events", "aggregates"])
+def test_usage_decimal_round_trip(real_engine, name: str) -> None:  # type: ignore[no-untyped-def]
+    from dataclasses import replace
+    from decimal import Decimal
+
+    from meridian_storage import ResourceRef
+    from tests.usage_fixtures import usage_schema
+
+    endpoint, client, _ = real_engine
+    schema = usage_schema(name)
+    compilation = ClickHouseSchemaCompiler().compile(
+        database="meridian_adapter_test",
+        resource=ResourceRef("structured", "usage", name),
+        resource_fingerprint=RESOURCE_FINGERPRINT,
+        schema=schema,
+        record_profile="usage",
+    )
+    layout = compilation.layout
+    context = build_create_context(
+        layout, endpoint=endpoint, username="meridian", password="meridian-test"
+    )
+    settings = ClickHouseSettings.from_binding(context.binding)
+    ClickHouseMigrator(client, settings).apply(
+        plan_initial_migration(f"usage-{name}", (compilation,))
+    )
+    value = "1234567890123456789012345678901234567890123456789012345678.123456789012345678"
+    record = {}
+    for field in schema.fields:
+        kind = field.logical_type.kind.value
+        record[field.name] = (
+            None
+            if field.nullable
+            else value
+            if kind == "decimal"
+            else "2026-09-06T00:00:00.123456Z"
+            if kind == "utcTimestamp"
+            else {}
+            if kind == "json"
+            else 1
+            if kind == "int64"
+            else "test"
+        )
+    runtime = ClickHouseAdapterFactory().create(context)
+    runtime.open()
+    session = runtime.open_session(transactional=False)
+    try:
+        request = build_request(layout, records=[record], scope={"suite": name})
+        request = replace(
+            request,
+            operation=replace(
+                request.operation,
+                operation_contract="meridian.structured.put",
+                input={"data": record},
+            ),
+        )
+        first = session.execute(request)
+        assert session.execute(request).data["batchId"] == first.data["batchId"]
+        measurement = "value" if name == "events" else "total"
+        rows = client.query(
+            f"SELECT `{layout.physical_column(measurement)}` "
+            f"FROM {layout.qualified_table(settings.database)} FINAL"
+        ).result_rows
+        assert len(rows) == 1
+        assert rows[0][0] == Decimal(value)
+        query = replace(
+            request,
+            operation=replace(
+                request.operation,
+                operation_contract="meridian.structured.query",
+                read_only=True,
+                input={
+                    "where": {
+                        "windowStart": {"gte": "2026-09-06T00:00:00Z", "lt": "2026-09-07T00:00:00Z"}
+                    },
+                    "limit": 10,
+                },
+            ),
+        )
+        result = session.execute(query).data["items"]
+        assert len(result) == 1
+        assert Decimal(result[0][measurement]) == Decimal(value)
+    finally:
+        session.close()
+        runtime.close()

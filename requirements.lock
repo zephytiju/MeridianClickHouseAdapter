@@ -132,20 +132,20 @@ lz4==4.4.5 \
     --hash=sha256:f9b8bde9909a010c75b3aea58ec3910393b758f3c219beed67063693df854db0 \
     --hash=sha256:ff1b50aeeec64df5603f17984e4b5be6166058dcf8f1e26a3da40d7a0f6ab547
     # via clickhouse-connect
-meridian-storage-core==1.0.0 \
-    --hash=sha256:2c44d44569a380f44ea7f797e7fe623d0242fa79b6bc34606d6bad1bc53f2d5a \
-    --hash=sha256:6b8ebb70ee1a8467a96d668878a8eebf826c1c4b63b3832ae70f2c630a8ef4a1
+meridian-storage-core==1.0.1 \
+    --hash=sha256:5c873da941b7b5e14ca0d852d723f919e88a28bbf6cc48ae0ef985b64cac9a97 \
+    --hash=sha256:9244a6fac589f402a82037f08e2d57a5ae4f9747c7c825b46cedf8c6d67f2b80
     # via
     #   meridian-storage-clickhouse (pyproject.toml)
     #   meridian-storage-query
     #   meridian-storage-semantics
-meridian-storage-query==1.0.0 \
-    --hash=sha256:ac7d1747e0b9574810f79cfda99abbdd6d0dac230107b655de386871eb8ca9dc \
-    --hash=sha256:b7ae4572ae70fb51ec190080df40fd10e667d69634ee811f0a7e3f72b56e41cc
+meridian-storage-query==1.0.2 \
+    --hash=sha256:782814c2ee94e4563029566a87e0b86ea87d62078b103ec5d3cdcc4763fab1fc \
+    --hash=sha256:fa4d7b157a8fd1c1ba18cedab09dadf0e8f5e301f5734e3e38f41906853527b8
     # via meridian-storage-clickhouse (pyproject.toml)
-meridian-storage-semantics==1.0.0 \
-    --hash=sha256:02605909db5dc7ff22d4ae5e3ae1b3fe6c25a68e9ecaa4c3ead36082848d0311 \
-    --hash=sha256:76fced0bc083f145fad1949b85147a3563f3584f99994471693915a8ba1851ec
+meridian-storage-semantics==2.0.0 \
+    --hash=sha256:86c5f5c4d7f7af045b70e5e7480b21d794d166c37d2d76acb54c4720d49732d5 \
+    --hash=sha256:a62cd1255e04a030847afa1e6553434dfe5efdf33dd7878401141b1c5e80c19b
     # via
     #   meridian-storage-clickhouse (pyproject.toml)
     #   meridian-storage-query
