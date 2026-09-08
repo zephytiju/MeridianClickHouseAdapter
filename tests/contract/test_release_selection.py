@@ -76,7 +76,8 @@ def test_packaged_release_selection_golden_fingerprints():
     )
     assert document["evidenceClass"] == "canonical-metadata-only"
     for row in document["combinations"]:
-        layout = build_layout(topology=Topology(row["profile"]))
+        # This immutable vector describes the pre-append-only physical layout.
+        layout = replace(build_layout(topology=Topology(row["profile"])), append_only=False)
         selected = row["selectedEngineVersion"]
         settings = ClickHouseSettings.from_binding(build_binding(layout, engine_version=selected))
         assert layout.layout_fingerprint == row["layoutFingerprint"]

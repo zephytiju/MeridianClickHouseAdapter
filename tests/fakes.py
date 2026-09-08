@@ -33,6 +33,7 @@ class FakeClient:
         self.timezone = "UTC"
         self.replica_health = (0, 0, 2, 2)
         self.engine_override: str | None = None
+        self.sorting_key_override: str | None = None
 
     def query(
         self,
@@ -46,6 +47,12 @@ class FakeClient:
             return FakeResult(("version", "timezone"), ((self.version, self.timezone),))
         if "FROM system.functions" in query:
             return FakeResult(("name",), tuple((name,) for name in self.function_names))
+        if query.startswith("SELECT sorting_key"):
+            sorting_key = self.sorting_key_override or ", ".join(
+                name if name in HIDDEN_COLUMNS else self.layout.physical_column(name)
+                for name in self.layout.order_fields
+            )
+            return FakeResult(("sorting_key",), ((sorting_key,),))
         if "FROM system.tables" in query:
             engine = self.engine_override or (
                 "ReplicatedReplacingMergeTree"

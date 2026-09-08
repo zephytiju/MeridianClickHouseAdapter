@@ -32,6 +32,27 @@ from tests.conftest import (
 pytestmark = pytest.mark.cluster
 
 
+def test_public_core_evidence_append_replicated_merge_restart_and_backup(replicated_engine):
+    from tests.evidence_fixtures import append_and_assert, core_fixture
+    from tests.recovery import backup_restore, compose
+
+    clients, _ = replicated_engine
+    runtime, layout = core_fixture(
+        clients, ("http://127.0.0.1:18123", "http://127.0.0.1:18124"), Topology.REPLICATED
+    )
+    append_and_assert(runtime, layout, seed=True)
+    table = layout.qualified_table("meridian_adapter_test")
+    for client in clients:
+        client.command(f"SYSTEM SYNC REPLICA {table}")
+        client.command(f"OPTIMIZE TABLE {table} FINAL")
+    append_and_assert(lambda: runtime(1), layout, seed=False)
+    compose("restart", "clickhouse-1")
+    compose("up", "--wait", "clickhouse-1")
+    append_and_assert(runtime, layout, seed=False)
+    backup_restore(clients[0], layout, "public_append", peers=clients)
+    append_and_assert(lambda: runtime(1), layout, seed=False)
+
+
 @pytest.fixture(scope="module")
 def replicated_engine():  # type: ignore[no-untyped-def]
     if os.environ.get("CLICKHOUSE_CLUSTER") != "1":

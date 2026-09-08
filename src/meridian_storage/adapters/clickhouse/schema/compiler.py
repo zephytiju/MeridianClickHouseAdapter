@@ -149,6 +149,7 @@ class ClickHouseSchemaCompiler:
             partition_interval=partition_interval,
             topology=selected_topology,
             query_final=query_final,
+            append_only=resource.catalog == "evidence",
             administrative_profiles=administrative_profiles,
             indexes=indexes,
         )
@@ -300,6 +301,8 @@ def create_table_ddl(database: str, layout: ResourceLayout) -> str:
         timestamp,
         *(quote_identifier(layout.physical_column(item)) for item in layout.identity_fields),
     ]
+    if layout.append_only:
+        order.append(quote_identifier(HIDDEN_ROW))
     statements = [
         f"CREATE TABLE IF NOT EXISTS {table} (",
         *definitions_with_commas,

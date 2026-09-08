@@ -50,6 +50,9 @@ def probe_adapter(
     )
     if any(value != expected_engine for value in engines.values()):
         _incompatible("ClickHouse physical topology differs from the Binding Engine profile")
+    for layout in settings.layouts.values():
+        if layout.append_only:
+            _verify_append_order(client, settings.database, layout)
     replica_count = 1
     if expected_replicated:
         replica_count = _verify_replicas(client, settings)
@@ -106,10 +109,14 @@ def verify_physical(
         )
         if engine != expected_engine:
             _incompatible("ClickHouse physical table engine differs from the compiled layout")
+        append_order: dict[str, JsonValue] = {}
+        if layout.append_only:
+            append_order["sortingKey"] = _verify_append_order(client, settings.database, layout)
         mapping = layout.qualified_table(settings.database)
         mappings[canonical] = mapping
         evidence_rows.append(
             {
+                **append_order,
                 "columns": [[name, value] for name, value in columns],
                 "engine": engine,
                 "layoutFingerprint": layout.layout_fingerprint,
@@ -201,6 +208,22 @@ def _table_engines(
     if set(engines) != set(names):
         _incompatible("ClickHouse is missing one or more IaC-managed physical tables")
     return engines
+
+
+def _verify_append_order(client: ClickHouseClient, database: str, layout: ResourceLayout) -> str:
+    result = client.query(
+        "SELECT sorting_key FROM system.tables "
+        "WHERE database = {database:String} AND name = {table:String}",
+        {"database": database, "table": layout.table},
+    )
+    # Compiled physical identifiers contain only ASCII letters, digits and underscores.
+    expected = ", ".join(
+        name if name in HIDDEN_COLUMNS else layout.physical_column(name)
+        for name in layout.order_fields
+    )
+    if len(result.result_rows) != 1 or str(result.result_rows[0][0]) != expected:
+        _incompatible("ClickHouse append-only sorting key differs from the compiled layout")
+    return expected
 
 
 def _verify_replicas(client: ClickHouseClient, settings: ClickHouseSettings) -> int:

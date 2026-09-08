@@ -16,8 +16,8 @@ def distributions() -> tuple[Path, Path]:
     if configured is None:
         pytest.skip("MERIDIAN_DIST_DIR selects built artifacts")
     directory = Path(configured)
-    wheels = tuple(directory.glob("meridian_storage_clickhouse-1.1.2-*.whl"))
-    sdists = tuple(directory.glob("meridian_storage_clickhouse-1.1.2.tar.gz"))
+    wheels = tuple(directory.glob("meridian_storage_clickhouse-1.1.3-*.whl"))
+    sdists = tuple(directory.glob("meridian_storage_clickhouse-1.1.3.tar.gz"))
     assert len(wheels) == 1
     assert len(sdists) == 1
     return wheels[0], sdists[0]
@@ -57,7 +57,7 @@ def test_wheel_metadata_is_release_ready(distributions: tuple[Path, Path]) -> No
             Path(name).name for name in archive.namelist() if ".dist-info/licenses/" in name
         }
     assert metadata["Name"] == "meridian-storage-clickhouse"
-    assert metadata["Version"] == "1.1.2"
+    assert metadata["Version"] == "1.1.3"
     assert metadata["License-Expression"] == "Apache-2.0"
     assert metadata.get_all("Requires-Python") == ["<3.15,>=3.12"]
     requirements = set(metadata.get_all("Requires-Dist", []))
@@ -78,7 +78,7 @@ def test_sdist_contains_source_license_notice_and_build_metadata(
     _, sdist = distributions
     with tarfile.open(sdist, "r:gz") as archive:
         names = set(archive.getnames())
-    root = "meridian_storage_clickhouse-1.1.2/"
+    root = "meridian_storage_clickhouse-1.1.3/"
     assert root + "pyproject.toml" in names
     assert root + "LICENSE" in names
     assert root + "NOTICE" in names
