@@ -10,6 +10,7 @@ from typing import Any
 from ._canonical import quote_identifier
 from .client import ClickHouseClient
 from .configuration import ClickHouseSettings
+from .probe.health import _verify_append_order
 from .schema import METADATA_TABLE, ResourceLayout, SchemaCompilation
 
 
@@ -59,6 +60,10 @@ class ClickHouseMigrator:
                 raise ValueError("migration layout differs from the closed ClickHouse Binding")
         for statement in bundle.statements:
             self._client.command(statement)
+        for layout in bundle.layouts:
+            if layout.append_only:
+                # IF NOT EXISTS cannot upgrade an old table. Never relabel its metadata.
+                _verify_append_order(self._client, self._settings.database, layout)
         timestamp = (now or datetime.now(UTC)).astimezone(UTC)
         metadata = f"{quote_identifier(self._settings.database)}.{quote_identifier(METADATA_TABLE)}"
         rows: list[tuple[Any, ...]] = [

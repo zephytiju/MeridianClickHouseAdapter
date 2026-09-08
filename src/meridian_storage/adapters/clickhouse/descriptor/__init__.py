@@ -138,11 +138,22 @@ def adapter_descriptor(settings: ClickHouseSettings, engine_version: str) -> Ada
         "migration_behavior": "external-iac-job",
         "health_probes": ("authenticated", "functions", "schema", "timezone", "topology"),
     }
+    evidence_layouts = tuple(
+        layout for layout in settings.layouts.values() if layout.resource.catalog == "evidence"
+    )
+    append_guarantees: tuple[str, ...] = (
+        "eventual-visibility",
+        "retry-window-dedup",
+        "scope-isolation",
+    )
+    # A Binding-wide promise must hold for every eligible Resource, including mixed layouts.
+    if evidence_layouts and all(layout.append_only for layout in evidence_layouts):
+        append_guarantees = ("append-only", *append_guarantees)
     capabilities = (
         OperationCapability(
             "meridian.evidence.append",
             ("1.0.0",),
-            guarantees=("eventual-visibility", "retry-window-dedup", "scope-isolation"),
+            guarantees=append_guarantees,
             limits=limits,
             extensions={
                 "recordProfiles": [

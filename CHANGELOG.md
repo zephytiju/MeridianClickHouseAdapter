@@ -5,6 +5,17 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## 1.1.3
+
+- Make public Evidence append executable through Core by advertising `append-only`
+  only for explicitly compiled immutable-content layouts.
+- Include the canonical row fingerprint in new Evidence replacement keys, preserving
+  different contents with the same timestamp and identity through merges and recovery.
+- Verify real sorting keys before advertising or recording migration metadata;
+  retain legacy layout, descriptor and physical locks without silently upgrading tables.
+- Preserve structured append-version behavior and deny atomic Evidence at the SPI boundary.
+- Add public Core/Evidence pagination, retry, merge/restart, replica and backup regressions.
+
 ## 1.1.2
 
 - Preserve DateTime64(9) primary timestamps in batch preparation, stored reads,

@@ -67,6 +67,7 @@
     "partitionInterval": {"enum": ["hour", "day", "month"]},
     "topology": {"enum": ["clickhouse-standalone", "clickhouse-replicated"]},
     "queryFinal": {"type": "boolean"},
+    "appendOnly": {"const": true},
     "administrativeProfiles": {"$ref": "#/$defs/strings"},
     "indexes": {
       "type": "object",

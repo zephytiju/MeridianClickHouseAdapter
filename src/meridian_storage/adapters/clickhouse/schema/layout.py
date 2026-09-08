@@ -146,6 +146,7 @@ class ResourceLayout:
     query_final: bool = True
     administrative_profiles: tuple[str, ...] = ()
     indexes: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    append_only: bool = False
 
     def __post_init__(self) -> None:
         resource = ResourceRef.parse(self.resource)
@@ -184,6 +185,10 @@ class ResourceLayout:
             raise ValueError("schema version must be non-empty")
         if not isinstance(self.query_final, bool):
             raise TypeError("queryFinal must be boolean")
+        if not isinstance(self.append_only, bool):
+            raise TypeError("appendOnly must be boolean")
+        if self.append_only and resource.catalog != "evidence":
+            raise ValueError("appendOnly layouts require the evidence Catalog")
         admin = tuple(sorted(set(self.administrative_profiles)))
         if len(admin) != len(self.administrative_profiles) or any(not item for item in admin):
             raise ValueError("administrative profiles must be non-empty and unique")
@@ -217,7 +222,12 @@ class ResourceLayout:
 
     @property
     def order_fields(self) -> tuple[str, ...]:
-        return (HIDDEN_SCOPE, self.timestamp_field, *self.identity_fields)
+        return (
+            HIDDEN_SCOPE,
+            self.timestamp_field,
+            *self.identity_fields,
+            *((HIDDEN_ROW,) if self.append_only else ()),
+        )
 
     @property
     def layout_fingerprint(self) -> str:
@@ -257,6 +267,9 @@ class ResourceLayout:
             "administrativeProfiles": list(self.administrative_profiles),
             "indexes": {name: list(fields) for name, fields in self.indexes.items()},
         }
+        # Omission preserves the canonical document and fingerprint of legacy layouts.
+        if self.append_only:
+            result["appendOnly"] = True
         if include_fingerprint:
             result["layoutFingerprint"] = self.layout_fingerprint
         return result
@@ -285,8 +298,10 @@ class ResourceLayout:
             "indexes",
             "layoutFingerprint",
         }
-        if set(value) != required:
+        if set(value) - {"appendOnly"} != required:
             raise ValueError("Resource layout contains unknown or missing fields")
+        if "appendOnly" in value and value["appendOnly"] is not True:
+            raise ValueError("appendOnly must be true when present; omit it for legacy layouts")
         resource = value["resource"]
         columns = value["columns"]
         indexes = value["indexes"]
@@ -312,6 +327,7 @@ class ResourceLayout:
             partition_interval=cast(str, value["partitionInterval"]),
             topology=Topology(cast(str, value["topology"])),
             query_final=cast(bool, value["queryFinal"]),
+            append_only=value.get("appendOnly") is True,
             administrative_profiles=_strings(
                 value["administrativeProfiles"], "administrativeProfiles"
             ),

@@ -251,6 +251,11 @@ class ClickHouseAdapterSession:
                 "ClickHouse does not advertise the requested Operation version",
             )
         if contract in {"meridian.evidence.append", "meridian.structured.put"}:
+            if contract == "meridian.evidence.append" and operation.input.get("requireAtomic"):
+                raise CompatibilityError(
+                    ErrorCode.CAPABILITY_UNSUPPORTED,
+                    "ClickHouse does not advertise atomic-evidence",
+                )
             records = _write_records(contract, operation.input)
             batch = prepare_batch(request, layout, records, self._settings)
             receipt = self._batch_executor.execute(batch)

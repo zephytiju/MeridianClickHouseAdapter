@@ -2,7 +2,7 @@
 
 # Conformance evidence
 
-Version 1.1.2 consumes released Core >=1.1,<2, Semantics >=2.0.1,<3 and Query >=1.0.3,<2.
+Version 1.1.3 consumes released Core >=1.1,<2, Semantics >=2.0.1,<3 and Query >=1.0.3,<2.
 CI independently selects ClickHouse 25.3 and 25.8 for both topologies. Exact results and recovery
 coverage are described in [release selection](release-selection.md). Mocks are used only for fast unit tests; engine acceptance is
 performed against disposable genuine ClickHouse containers.
@@ -65,3 +65,6 @@ Nanosecond regression evidence includes public Observability 1.0.3 queries on re
 ClickHouse, direct append/read/one-row pagination on both replicas, exact filter
 boundaries, tied rows and signed cursor negatives. The test-only plugin pin is an
 independent released fixture; the adapter runtime dependencies are unchanged.
+
+[Public Evidence append](evidence-append.md) documents the 1.1.3 layout transition,
+legacy lock compatibility and real Core append/merge/restart/backup acceptance.
