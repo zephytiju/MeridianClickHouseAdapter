@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import UTC, date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import UUID
 
@@ -51,9 +51,7 @@ def test_logical_values_are_coerced_deterministically(
 
 
 def test_utc_timestamp_and_many_values_are_coerced() -> None:
-    assert _coerce("2026-08-25T12:00:00-07:00", "utcTimestamp", many=False) == datetime(
-        2026, 8, 25, 19, tzinfo=UTC
-    )
+    assert _coerce("2026-08-25T12:00:00-07:00", "utcTimestamp", many=False) == 1787684400000000000
     assert _coerce(["a", "b"], "string", many=True) == ["a", "b"]
     assert _coerce([None, "a"], "string", many=True) == [None, "a"]
 

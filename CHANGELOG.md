@@ -5,6 +5,15 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## 1.1.2
+
+- Preserve DateTime64(9) primary timestamps in batch preparation, stored reads,
+  projections, min/max results and signed live pagination using integer nanoseconds.
+- Bind exact UTC timestamp parameters and validate ranges at nanosecond precision.
+- Retain valid legacy cursor and microsecond result formats, canonical row/batch
+  identities, binary cursor correction, released dependency bounds and physical layouts.
+- Add real public Observability log/span/metric, replicated and signed-context regressions.
+
 ## 1.1.1
 
 - Repair physical row-fingerprint keyset comparison for native FixedString bytes,

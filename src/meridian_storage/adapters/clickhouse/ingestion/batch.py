@@ -18,6 +18,7 @@ from meridian_storage.semantics import JsonValue, canonical_json_bytes
 from meridian_storage.spi import ExecutionRequest
 
 from .._canonical import scope_digest
+from .._timestamps import timestamp_nanoseconds
 from ..client import ClickHouseClient
 from ..configuration import ClickHouseSettings
 from ..schema import ResourceLayout
@@ -201,10 +202,7 @@ def _coerce(value: JsonValue, logical_type: JsonValue, *, many: bool) -> Any:
     if kind == "utcTimestamp":
         if not isinstance(value, str):
             raise TypeError("utc-timestamp field requires an RFC 3339 string")
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        if parsed.tzinfo is None or parsed.utcoffset() is None:
-            raise ValueError("utc-timestamp field must include an offset")
-        return parsed.astimezone(UTC)
+        return timestamp_nanoseconds(value)
     if kind == "date":
         if not isinstance(value, str):
             raise TypeError("date field requires an ISO date string")
