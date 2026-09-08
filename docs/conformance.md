@@ -2,7 +2,7 @@
 
 # Conformance evidence
 
-Version 1.1.0 consumes released Core >=1.1,<2, Semantics >=2.0.1,<3 and Query >=1.0.3,<2.
+Version 1.1.1 consumes released Core >=1.1,<2, Semantics >=2.0.1,<3 and Query >=1.0.3,<2.
 CI independently selects ClickHouse 25.3 and 25.8 for both topologies. Exact results and recovery
 coverage are described in [release selection](release-selection.md). Mocks are used only for fast unit tests; engine acceptance is
 performed against disposable genuine ClickHouse containers.
@@ -50,3 +50,13 @@ The checked-in reports describe the original 1.0.0 release. CI reruns both profi
 newly generated reports as workflow artifacts. Checked-in
 reports are reviewed release evidence and are changed only when the selected engine/profile or
 adapter behavior changes.
+
+## Cursor regression coverage
+
+[Physical cursor compatibility](cursor-compatibility.md) records the unchanged
+wire format and historical cursor behavior. The standalone suite adds 24 cases
+across log/span/metric, mapping/wire queries, 0/f fingerprint prefixes, and
+live tied/default distinct identities. Each traversal returns all seven expected
+records exactly once, preserves binary/JSON values, terminates, and resumes
+both historical cursor representations at the correct boundary. Existing
+standalone and replicated recovery and backup/restore gates remain mandatory.

@@ -3,8 +3,11 @@
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import math
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -414,6 +417,8 @@ class _SQLCompiler:
         branches: list[str] = []
         equal: list[str] = []
         for (expression, direction, clickhouse_type), value in zip(sorts, values, strict=True):
+            if expression == quote_identifier(HIDDEN_ROW):
+                value = _physical_row_fingerprint(value)
             parameter = self.parameter(value, clickhouse_type)
             comparison = ">" if direction == "asc" else "<"
             branches.append(
@@ -786,6 +791,32 @@ def _literal_type(value: Literal) -> str:
     }.get(cast(str, kind), "String")
 
 
+def _physical_row_fingerprint(value: JsonValue) -> str:
+    """Recover the stored hex digest from either existing signed cursor encoding.
+
+    FixedString results are bytes with the native driver, so V1 cursors contain
+    Base64; string-returning clients issued the raw hex digest. Their lengths
+    are disjoint. Decode only this physical column, after cursor verification,
+    without changing the wire format or logical binary serialization.
+    """
+    if isinstance(value, str):
+        if re.fullmatch(r"[0-9a-f]{64}", value):
+            return value
+        if len(value) == 88 and value.isascii():
+            try:
+                decoded = base64.b64decode(value, validate=True)
+                fingerprint = decoded.decode("ascii")
+            except (binascii.Error, UnicodeDecodeError):
+                pass
+            else:
+                if (
+                    re.fullmatch(r"[0-9a-f]{64}", fingerprint)
+                    and base64.b64encode(decoded).decode("ascii") == value
+                ):
+                    return fingerprint
+    raise ValueError("cursor row fingerprint is not a canonical stored SHA-256 digest")
+
+
 def _parameter_type(value: str) -> str:
     result = value
     while result.startswith("Nullable(") and result.endswith(")"):
@@ -890,8 +921,6 @@ def _json_value(value: Any) -> JsonValue:
     if hasattr(value, "isoformat"):
         return cast(str, value.isoformat())
     if isinstance(value, bytes):
-        import base64
-
         return base64.b64encode(value).decode("ascii")
     if isinstance(value, Mapping):
         return {str(key): _json_value(item) for key, item in value.items()}

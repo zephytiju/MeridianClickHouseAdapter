@@ -1,0 +1,37 @@
+{
+  "description": "Pre-fix regression against installed public PyPI wheel, no source overrides.",
+  "distribution": "meridian-storage-clickhouse==1.1.0",
+  "wheelSha256": "cf76fc17b647695838641886d7d5bd2914f39f654bb553f631445d1ba569f71e",
+  "dependencies": {
+    "meridian-storage-core": "1.1.0",
+    "meridian-storage-query": "1.0.3",
+    "meridian-storage-semantics": "2.0.1",
+    "clickhouse-connect": "0.15.1"
+  },
+  "server": "25.3.14.14",
+  "image": "clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2",
+  "command": "CLICKHOUSE_INTEGRATION=1 <public-1.1.0-venv>/bin/python -m pytest tests/integration/test_cursor_pagination.py",
+  "expectedFailureCount": 18,
+  "passCount": 6,
+  "failedCases": [
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-False-log-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-False-span-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-False-metric-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-True-log-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-True-span-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[0-True-metric-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-log-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-log-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-span-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-span-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-metric-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-False-metric-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-log-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-log-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-span-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-span-True]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-metric-False]",
+    "test_telemetry_pagination_has_no_repeated_or_omitted_boundaries[f-True-metric-True]"
+  ],
+  "interpretation": "All twelve f-prefix cases repeat boundaries; six 0-prefix cases with tied identities omit rows. Six 0-prefix distinct-identity cases pass. Corrected release must pass all 24."
+}
