@@ -35,6 +35,7 @@ from meridian_storage.query import (
 from meridian_storage.semantics import JsonValue, canonical_json_bytes, sha256_fingerprint
 
 from .._canonical import quote_identifier
+from .._timestamps import timestamp_nanoseconds, timestamp_text
 from ..configuration import ADAPTER_ID, ClickHouseSettings
 from ..descriptor import query_capabilities
 from ..schema import HIDDEN_ROW, HIDDEN_SCOPE, ResourceLayout
@@ -155,7 +156,16 @@ class ClickHouseQueryTranslator:
             if operation.result.projection
             else {name: name for name in layout.column_map}
         )
-        command.update(_result_metadata(layout, result_fields))
+        if operation.operation == "aggregate":
+            result_fields.update(
+                {
+                    item.name: item.aggregate.operand.name
+                    for item in operation.aggregates
+                    if item.aggregate.function in {"min", "max"}
+                    and isinstance(item.aggregate.operand, Field)
+                }
+            )
+        command.update(_result_metadata(layout, result_fields, sorts=sorts))
         return CompiledQuery(
             adapter_id=ADAPTER_ID,
             plan_fingerprint=context.plan_fingerprint,
@@ -195,7 +205,10 @@ class ClickHouseQueryTranslator:
             last = dict(zip(column_names, cast(Sequence[Any], visible_rows[-1]), strict=True))
             sort_count = cast(int, command["sortCount"])
             sort_tuple = tuple(
-                _json_value(last[f"{_SORT_ALIAS_PREFIX}{index}"]) for index in range(sort_count)
+                _logical_json_value(
+                    last[f"{_SORT_ALIAS_PREFIX}{index}"], f"{_SORT_ALIAS_PREFIX}{index}", command
+                )
+                for index in range(sort_count)
             )
             cursor = self._cursor_signer.issue(
                 plan_fingerprint=cast(str, command["cursorPlanFingerprint"]),
@@ -325,8 +338,16 @@ def compile_simple_query(
         "sortCount": 0 if operation == "aggregate" else len(sorts),
         "sql": sql,
     }
-    result_fields = group_fields if operation == "aggregate" else selected
-    command.update(_result_metadata(layout, {name: name for name in result_fields}))
+    result_fields = {
+        name: name for name in (group_fields if operation == "aggregate" else selected)
+    }
+    if operation == "aggregate":
+        for metric in cast(Sequence[JsonValue], metrics):
+            if isinstance(metric, Mapping) and metric.get("function") in {"min", "max"}:
+                result_fields[cast(str, metric["name"])] = cast(str, metric["field"])
+    command.update(
+        _result_metadata(layout, result_fields, sorts=() if operation == "aggregate" else sorts)
+    )
     return CompiledQuery(ADAPTER_ID, context.plan_fingerprint, command, compiler.parameters, shape)
 
 
@@ -746,20 +767,9 @@ def _validate_simple_bounds(
 
 
 def _validate_range(start: JsonValue, end: JsonValue, maximum_seconds: int) -> None:
-    start_value = _datetime(start)
-    end_value = _datetime(end)
-    seconds = (end_value - start_value).total_seconds()
-    if seconds <= 0 or seconds > maximum_seconds:
+    nanoseconds = timestamp_nanoseconds(end) - timestamp_nanoseconds(start)
+    if nanoseconds <= 0 or nanoseconds > maximum_seconds * 1_000_000_000:
         raise ValueError("ClickHouse timestamp range is empty, reversed, or exceeds its limit")
-
-
-def _datetime(value: JsonValue) -> datetime:
-    if not isinstance(value, str):
-        raise TypeError("ClickHouse timestamp boundary must be an RFC 3339 string literal")
-    result = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if result.tzinfo is None or result.utcoffset() is None:
-        raise ValueError("ClickHouse timestamp boundary must include an offset")
-    return result.astimezone(UTC)
 
 
 def _verify_schema_pin(layout: ResourceLayout, context: TranslationContext) -> None:
@@ -829,7 +839,7 @@ def _parameter_type(value: str) -> str:
 def _parameter_value(value: JsonValue, clickhouse_type: str) -> JsonValue:
     selected_type = _parameter_type(clickhouse_type)
     if selected_type.startswith("DateTime") and isinstance(value, str):
-        return _datetime(value).strftime("%Y-%m-%d %H:%M:%S.%f")
+        return timestamp_text(timestamp_nanoseconds(value), parameter=True)
     return value
 
 
@@ -887,20 +897,39 @@ def _field_names(value: object, name: str) -> tuple[str, ...]:
     return cast(tuple[str, ...], result)
 
 
-def _result_metadata(layout: ResourceLayout, fields: Mapping[str, str]) -> dict[str, JsonValue]:
+def _result_metadata(
+    layout: ResourceLayout,
+    fields: Mapping[str, str],
+    *,
+    sorts: Sequence[tuple[str, str, str]] = (),
+) -> dict[str, JsonValue]:
     formats: dict[str, JsonValue] = {}
     json_fields: list[JsonValue] = []
+    timestamps: list[JsonValue] = []
     for alias, name in fields.items():
         logical = layout.column_map[name].logical_type
         kind = logical.get("kind") if isinstance(logical, Mapping) else logical
-        if kind == "bytes":
+        if kind == "utcTimestamp":
+            formats[alias] = "int"
+            timestamps.append(alias)
+        elif kind == "bytes":
             formats[alias] = "bytes"
         elif kind in {"json", "objectRef", "recordRef"}:
             json_fields.append(alias)
-    return {"columnFormats": formats, "jsonColumns": json_fields}
+    for index, (_, _, column_type) in enumerate(sorts):
+        if _parameter_type(column_type).startswith("DateTime64(9"):
+            alias = f"{_SORT_ALIAS_PREFIX}{index}"
+            formats[alias] = "int"
+            timestamps.append(alias)
+    return {"columnFormats": formats, "jsonColumns": json_fields, "timestampColumns": timestamps}
 
 
 def _logical_json_value(value: Any, name: str, command: Mapping[str, JsonValue]) -> JsonValue:
+    if name in cast(Sequence[str], command.get("timestampColumns", ())):
+        if isinstance(value, int) and not isinstance(value, bool):
+            return timestamp_text(value)
+        if isinstance(value, (list, tuple)):
+            return [_logical_json_value(item, name, command) for item in value]
     if name in cast(Sequence[str], command.get("jsonColumns", ())):
         if isinstance(value, str):
             return cast(JsonValue, json.loads(value))

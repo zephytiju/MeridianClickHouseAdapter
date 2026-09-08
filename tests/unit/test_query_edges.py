@@ -31,9 +31,9 @@ from meridian_storage.query import (
 )
 
 from meridian_storage.adapters.clickhouse import ClickHouseQueryTranslator, ClickHouseSettings
+from meridian_storage.adapters.clickhouse._timestamps import timestamp_nanoseconds
 from meridian_storage.adapters.clickhouse.query.compiler import (
     _as_mapping,
-    _datetime,
     _field_names,
     _json_value,
     _parameter_type,
@@ -408,8 +408,8 @@ def test_normalization_and_low_level_guards_cover_wire_types(layout) -> None:  #
     with pytest.raises(TypeError, match="field names"):
         _field_names(["ok", ""], "select")
     assert _parameter_type("Nullable(LowCardinality(String))") == "String"
-    assert _datetime("2026-08-25T01:00:00+01:00") == datetime(2026, 8, 25, tzinfo=UTC)
+    assert timestamp_nanoseconds("2026-08-25T01:00:00+01:00") == 1787616000000000000
     with pytest.raises(TypeError, match="RFC 3339"):
-        _datetime(1)  # type: ignore[arg-type]
-    with pytest.raises(ValueError, match="include an offset"):
-        _datetime("2026-08-25T00:00:00")
+        timestamp_nanoseconds(1)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="offset"):
+        timestamp_nanoseconds("2026-08-25T00:00:00")

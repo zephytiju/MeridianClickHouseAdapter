@@ -303,7 +303,7 @@ def test_schema_directed_binary_and_json_result_normalization(wire):
             signer,
         )
         names = ("binary", "attributes")
-    assert compiled.command["columnFormats"] == {names[0]: "bytes"}
+    assert compiled.command["columnFormats"] == {names[0]: "bytes", "__meridian_sort_0": "int"}
     result = translator.normalize_result(
         compiled,
         SimpleNamespace(

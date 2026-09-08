@@ -231,3 +231,57 @@ def test_member_loss_catchup_and_backup_restore(replicated_engine) -> None:
         backup_restore(recovered, layout, "replicated", peers=(clients[0], recovered))
     finally:
         recovered.close()
+
+
+def test_replicated_nanosecond_append_read_and_pagination(replicated_engine):
+    from dataclasses import replace
+
+    clients, layout = replicated_engine
+    times = [f"2026-08-25T12:00:00.123456{value}Z" for value in (789, 790, 791)]
+    records = [sample_record(observed_at=t, series_id=f"nano-{i}") for i, t in enumerate(times)]
+    request = build_request(layout, records=records, scope={"suite": "replicated-nano"})
+    for index in (0, 1):
+        runtime = ClickHouseAdapterFactory().create(
+            build_create_context(
+                layout,
+                endpoint=f"http://127.0.0.1:{18123 + index}",
+                username="meridian",
+                password="meridian-test",
+            )
+        )
+        runtime.open()
+        session = runtime.open_session(transactional=False)
+        try:
+            if index == 0:
+                first = session.execute(request)
+                assert session.execute(request).data["batchId"] == first.data["batchId"]
+                clients[1].command(
+                    f"SYSTEM SYNC REPLICA {layout.qualified_table('meridian_adapter_test')}"
+                )
+            cursor = None
+            seen = []
+            for _ in range(4):
+                query = replace(
+                    request,
+                    operation=replace(
+                        request.operation,
+                        operation_contract="meridian.evidence.query",
+                        read_only=True,
+                        input={
+                            "where": {"observed_at": {"gte": times[0], "lte": times[-1]}},
+                            "limit": 1,
+                            **({"cursor": cursor} if cursor else {}),
+                        },
+                    ),
+                )
+                result = session.execute(query).data
+                seen.extend(result["items"])
+                cursor = result.get("cursor")
+                if cursor is None:
+                    break
+            assert cursor is None
+            assert [row["observed_at"] for row in seen] == list(reversed(times))
+            assert [row["series_id"] for row in seen] == ["nano-2", "nano-1", "nano-0"]
+        finally:
+            session.close()
+            runtime.close()
