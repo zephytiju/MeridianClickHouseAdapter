@@ -4,6 +4,7 @@ services:
   keeper:
     image: clickhouse/clickhouse-keeper@sha256:2c8b97bb628999adfa597172091ce495304e0a260d791fe6e475d64a314193b4
     volumes:
+      - keeper-data:/var/lib/clickhouse-keeper
       - ./config/keeper.xml:/etc/clickhouse-keeper/keeper_config.xml:ro
     healthcheck:
       test: ["CMD", "nc", "-z", "127.0.0.1", "9181"]
@@ -11,11 +12,10 @@ services:
       timeout: 2s
       retries: 60
     tmpfs:
-      - /var/lib/clickhouse-keeper
       - /var/log/clickhouse-keeper
 
   clickhouse-1:
-    image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+    image: ${CLICKHOUSE_IMAGE:-clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2}
     depends_on:
       keeper:
         condition: service_healthy
@@ -25,6 +25,8 @@ services:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     volumes:
       - ./config/common.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - replica-1-data:/var/lib/clickhouse
+      - ../integration/backup.xml:/etc/clickhouse-server/config.d/backup.xml:ro
       - ./config/replica-1.xml:/etc/clickhouse-server/config.d/macros.xml:ro
     ports:
       - "18123:8123"
@@ -34,11 +36,10 @@ services:
       timeout: 2s
       retries: 60
     tmpfs:
-      - /var/lib/clickhouse
       - /var/log/clickhouse-server
 
   clickhouse-2:
-    image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+    image: ${CLICKHOUSE_IMAGE:-clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2}
     depends_on:
       keeper:
         condition: service_healthy
@@ -48,6 +49,8 @@ services:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     volumes:
       - ./config/common.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - replica-2-data:/var/lib/clickhouse
+      - ../integration/backup.xml:/etc/clickhouse-server/config.d/backup.xml:ro
       - ./config/replica-2.xml:/etc/clickhouse-server/config.d/macros.xml:ro
     ports:
       - "18124:8123"
@@ -57,5 +60,9 @@ services:
       timeout: 2s
       retries: 60
     tmpfs:
-      - /var/lib/clickhouse
       - /var/log/clickhouse-server
+
+volumes:
+  keeper-data:
+  replica-1-data:
+  replica-2-data:

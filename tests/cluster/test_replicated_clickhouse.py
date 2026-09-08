@@ -179,3 +179,55 @@ def _write_evidence(document: object) -> None:
         json.dumps(document, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def test_member_loss_catchup_and_backup_restore(replicated_engine) -> None:
+    from meridian_storage.errors import CompatibilityError
+
+    from meridian_storage.adapters.clickhouse.probe import probe_adapter
+    from tests.recovery import backup_restore, compose
+
+    clients, layout = replicated_engine
+    table = layout.qualified_table("meridian_adapter_test")
+    settings = ClickHouseSettings.from_binding(build_create_context(layout).binding)
+    selected = os.environ.get("CLICKHOUSE_SELECTED_RELEASE", "25.3")
+    compose("stop", "clickhouse-2")
+    try:
+        deadline = time.monotonic() + 90
+        while True:
+            try:
+                probe_adapter(clients[0], settings, selected_engine_version=selected)
+            except CompatibilityError as exc:
+                assert "healthy active replica set" in str(exc)
+                break
+            if time.monotonic() >= deadline:
+                pytest.fail("member loss did not become observable")
+            time.sleep(0.5)
+        # Append through the ordinary adapter path while the previously opened session's
+        # peer is absent; strict startup rejects degraded topology as required.
+        from meridian_storage.adapters.clickhouse.ingestion import prepare_batch
+
+        request = build_request(
+            layout, records=[sample_record(series_id="during-outage")], request_id="during-outage"
+        )
+        batch = prepare_batch(request, layout, [sample_record(series_id="during-outage")], settings)
+        # Runtime supplies the exact batch token and columns; use its executor helper.
+        from meridian_storage.adapters.clickhouse.ingestion import BatchExecutor
+
+        BatchExecutor(clients[0], settings).execute(batch)
+    finally:
+        compose("start", "clickhouse-2")
+    recovered = _wait_client(18124)
+    try:
+        recovered.command(f"SYSTEM SYNC REPLICA {table}")
+        probe_adapter(recovered, settings, selected_engine_version=selected)
+        column = layout.physical_column("series_id")
+        assert (
+            recovered.query(
+                f"SELECT count() FROM {table} FINAL WHERE `{column}` = 'during-outage'"
+            ).result_rows[0][0]
+            == 1
+        )
+        backup_restore(recovered, layout, "replicated", peers=(clients[0], recovered))
+    finally:
+        recovered.close()

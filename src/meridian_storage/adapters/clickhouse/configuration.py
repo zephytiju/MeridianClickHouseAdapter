@@ -20,7 +20,9 @@ from .schema import ResourceLayout, Topology
 
 ADAPTER_ID = "meridian.storage.clickhouse"
 ADAPTER_CONTRACT_VERSION = "1.0.0"
-SUPPORTED_ENGINE_VERSIONS = ("25.3",)
+TESTED_ENGINE_VERSIONS = ("25.3",)
+# Legacy public name: historical conformance metadata, never an acceptance predicate.
+SUPPORTED_ENGINE_VERSIONS = TESTED_ENGINE_VERSIONS
 DEFAULT_MAX_BATCH_ROWS = 10_000
 DEFAULT_MAX_BATCH_BYTES = 16 * 1024 * 1024
 DEFAULT_MAX_TIME_RANGE_SECONDS = 31 * 24 * 60 * 60
@@ -70,8 +72,6 @@ class ClickHouseSettings:
             _fail("Binding Adapter identity does not select ClickHouse")
         if binding.adapter_contract != ADAPTER_CONTRACT_VERSION:
             _fail("Binding Adapter contract must be exactly 1.0.0")
-        if binding.engine_version not in SUPPORTED_ENGINE_VERSIONS:
-            _fail("ClickHouse Binding Engine version is not supported by this release")
         try:
             topology = Topology(binding.engine_profile)
         except ValueError as exc:
@@ -215,6 +215,7 @@ __all__ = [
     "ADAPTER_CONTRACT_VERSION",
     "ADAPTER_ID",
     "SUPPORTED_ENGINE_VERSIONS",
+    "TESTED_ENGINE_VERSIONS",
     "ClickHouseSettings",
     "Endpoint",
     "parse_endpoint",

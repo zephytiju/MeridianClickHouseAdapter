@@ -2,8 +2,9 @@
 
 # Conformance evidence
 
-Version 1.0.1 targets released Meridian Core 1.0.1, Semantics 2.0.0, and Query 1.0.2
-artifacts and ClickHouse 25.3.14.14. Mocks are used only for fast unit tests; engine acceptance is
+Version 1.1.0 consumes released Core >=1.1,<2, Semantics >=2.0.1,<3 and Query >=1.0.3,<2.
+CI independently selects ClickHouse 25.3 and 25.8 for both topologies. Exact results and recovery
+coverage are described in [release selection](release-selection.md). Mocks are used only for fast unit tests; engine acceptance is
 performed against disposable genuine ClickHouse containers.
 
 ## Reproduce locally
@@ -27,7 +28,7 @@ The cluster profile starts one Keeper and two ClickHouse replicas. It verifies t
 runner, replicated DDL/topology probes, active replica metadata, and write-on-replica-1/read-on-
 replica-2 visibility.
 
-## Immutable environment selection
+## Historical 1.0.1 environment selection
 
 - ClickHouse server:
   `clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2`
@@ -37,7 +38,8 @@ replica-2 visibility.
 - Meridian predecessors: `meridian-storage-core==1.0.1`,
   `meridian-storage-semantics==2.0.0`, and `meridian-storage-query==1.0.2`
 
-The hash-pinned runtime resolution is committed as `requirements.lock`.
+The current hash-pinned runtime resolution is committed as `requirements.lock`; this historical
+recipe is provenance, not a compatibility allowlist.
 
 ## Checked-in reports
 

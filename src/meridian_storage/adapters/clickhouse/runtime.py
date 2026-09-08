@@ -7,7 +7,7 @@ import hashlib
 import threading
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 from meridian_storage.errors import (
     CompatibilityError,
@@ -302,6 +302,8 @@ class ClickHouseAdapterSession:
         if not isinstance(sql, str):
             raise TypeError("compiled ClickHouse command is invalid")
         timeout = _timeout_seconds(request, self._settings)
+        result_formats = cast(Mapping[str, str], command.get("columnFormats", {}))
+        format_kwargs: dict[str, Any] = {"column_formats": result_formats} if result_formats else {}
         result = self._client.query(
             sql,
             dict(compiled.parameters),
@@ -310,6 +312,7 @@ class ClickHouseAdapterSession:
                 "max_result_rows": 501,
                 "result_overflow_mode": "throw",
             },
+            **format_kwargs,
         )
         normalized = self._translator.normalize_result(compiled, result)
         if budget is not None:

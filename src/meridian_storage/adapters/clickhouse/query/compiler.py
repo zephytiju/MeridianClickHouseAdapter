@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
@@ -140,6 +141,18 @@ class ClickHouseQueryTranslator:
                 cursor_plan_fingerprint=cursor_plan,
                 sort_count=len(sorts),
             )
+        result_fields = (
+            {item.name: item.name for item in operation.grouping if isinstance(item, Field)}
+            if operation.operation == "aggregate"
+            else {
+                item.alias or item.expression.name: item.expression.name
+                for item in operation.result.projection
+                if isinstance(item.expression, Field)
+            }
+            if operation.result.projection
+            else {name: name for name in layout.column_map}
+        )
+        command.update(_result_metadata(layout, result_fields))
         return CompiledQuery(
             adapter_id=ADAPTER_ID,
             plan_fingerprint=context.plan_fingerprint,
@@ -169,7 +182,7 @@ class ClickHouseQueryTranslator:
             mapping = dict(zip(column_names, cast(Sequence[Any], row), strict=True))
             items.append(
                 {
-                    key: _json_value(value)
+                    key: _logical_json_value(value, key, command)
                     for key, value in mapping.items()
                     if not key.startswith(_SORT_ALIAS_PREFIX) and key != _TOTAL_ALIAS
                 }
@@ -309,6 +322,8 @@ def compile_simple_query(
         "sortCount": 0 if operation == "aggregate" else len(sorts),
         "sql": sql,
     }
+    result_fields = group_fields if operation == "aggregate" else selected
+    command.update(_result_metadata(layout, {name: name for name in result_fields}))
     return CompiledQuery(ADAPTER_ID, context.plan_fingerprint, command, compiler.parameters, shape)
 
 
@@ -839,6 +854,28 @@ def _field_names(value: object, name: str) -> tuple[str, ...]:
     if any(not isinstance(item, str) or not item for item in result):
         raise TypeError(f"mapping-first {name} entries must be field names")
     return cast(tuple[str, ...], result)
+
+
+def _result_metadata(layout: ResourceLayout, fields: Mapping[str, str]) -> dict[str, JsonValue]:
+    formats: dict[str, JsonValue] = {}
+    json_fields: list[JsonValue] = []
+    for alias, name in fields.items():
+        logical = layout.column_map[name].logical_type
+        kind = logical.get("kind") if isinstance(logical, Mapping) else logical
+        if kind == "bytes":
+            formats[alias] = "bytes"
+        elif kind in {"json", "objectRef", "recordRef"}:
+            json_fields.append(alias)
+    return {"columnFormats": formats, "jsonColumns": json_fields}
+
+
+def _logical_json_value(value: Any, name: str, command: Mapping[str, JsonValue]) -> JsonValue:
+    if name in cast(Sequence[str], command.get("jsonColumns", ())):
+        if isinstance(value, str):
+            return cast(JsonValue, json.loads(value))
+        if isinstance(value, (list, tuple)):
+            return [_logical_json_value(item, name, command) for item in value]
+    return _json_value(value)
 
 
 def _json_value(value: Any) -> JsonValue:

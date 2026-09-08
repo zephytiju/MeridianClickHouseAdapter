@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
-from importlib.metadata import version
+from importlib.metadata import requires, version
 
 import pytest
+from packaging.requirements import Requirement
 
 from meridian_storage import ResourceRef
 from meridian_storage.adapters.clickhouse import ClickHouseSchemaCompiler, ResourceLayout, Topology
@@ -11,9 +12,11 @@ from tests.usage_fixtures import usage_schema
 
 
 def test_released_shared_set() -> None:
-    assert version("meridian-storage-core") == "1.0.1"
-    assert version("meridian-storage-semantics") == "2.0.0"
-    assert version("meridian-storage-query") == "1.0.2"
+    # Validate installed dependency API bounds, not a historical release recipe.
+    for raw in requires("meridian-storage-clickhouse") or ():
+        requirement = Requirement(raw)
+        if requirement.name.startswith("meridian-storage-"):
+            assert version(requirement.name) in requirement.specifier
 
 
 @pytest.mark.parametrize("name", ["events", "aggregates"])

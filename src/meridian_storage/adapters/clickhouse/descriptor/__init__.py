@@ -8,7 +8,12 @@ from meridian_storage.semantics import JsonValue
 from meridian_storage.spi import AdapterDescriptor, CapabilityManifest, OperationCapability
 
 from .._canonical import fingerprint
-from ..configuration import ADAPTER_CONTRACT_VERSION, ADAPTER_ID, ClickHouseSettings
+from ..configuration import (
+    ADAPTER_CONTRACT_VERSION,
+    ADAPTER_ID,
+    TESTED_ENGINE_VERSIONS,
+    ClickHouseSettings,
+)
 from ..schema import Topology
 
 DRIVER = "clickhouse-connect/0.15"
@@ -119,6 +124,7 @@ def query_capabilities(settings: ClickHouseSettings) -> QueryCapabilities:
 
 
 def adapter_descriptor(settings: ClickHouseSettings, engine_version: str) -> AdapterDescriptor:
+    # engine_version is retained for API compatibility; selection is manifest provenance.
     limits = {
         "maxBatchBytes": settings.max_batch_bytes,
         "maxBatchRows": settings.max_batch_rows,
@@ -196,7 +202,7 @@ def adapter_descriptor(settings: ClickHouseSettings, engine_version: str) -> Ada
         adapter_id=ADAPTER_ID,
         adapter_contract_version=ADAPTER_CONTRACT_VERSION,
         driver=DRIVER,
-        supported_engine_versions={settings.topology.value: (engine_version,)},
+        supported_engine_versions={settings.topology.value: TESTED_ENGINE_VERSIONS},
         capabilities=capabilities,
     )
 

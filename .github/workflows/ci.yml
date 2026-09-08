@@ -94,7 +94,7 @@ jobs:
           wheel-smoke/bin/python -m pip install "${wheel}[test]"
           wheel-smoke/bin/python -m pip check
           wheel-smoke/bin/python -m pytest tests/unit tests/contract
-          wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.0.1'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
+          wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.1.0'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
       - uses: actions/upload-artifact@v7
         with:
           name: distributions
@@ -103,9 +103,20 @@ jobs:
             dist-a.sha256
 
   standalone:
-    name: ClickHouse 25.3 standalone
+    name: ClickHouse ${{ matrix.release }} standalone
     needs: quality
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: "25.3"
+            image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+          - release: "25.8"
+            image: clickhouse/clickhouse-server@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77
+    env:
+      CLICKHOUSE_SELECTED_RELEASE: ${{ matrix.release }}
+      CLICKHOUSE_IMAGE: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -114,19 +125,32 @@ jobs:
           cache: pip
       - run: python -m venv .venv
       - run: .venv/bin/python -m pip install --upgrade pip
-      - run: .venv/bin/python -m pip install -e ".[test]"
+      - run: mkdir -p build/evidence
+      - run: .venv/bin/python -m pip install ".[test]" --report build/evidence/installation.json
+      - run: .venv/bin/python -m pip check
       - run: ./scripts/run-standalone-conformance.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: standalone-engine-evidence
-          path: build/evidence/standalone.json
+          name: standalone-${{ matrix.release }}-engine-evidence
+          path: build/evidence/*
           if-no-files-found: error
 
   replicated:
-    name: ClickHouse 25.3 replicated
+    name: ClickHouse ${{ matrix.release }} replicated
     needs: quality
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: "25.3"
+            image: clickhouse/clickhouse-server@sha256:b627d7a9bc0e0c1bac26cdbe9d2fc6316faa29c5d8a174f28f5abd57d0fa6ba2
+          - release: "25.8"
+            image: clickhouse/clickhouse-server@sha256:0152dd511befe6a2c2ef53e930726179669b08116da78500b37c51c96ff5ee77
+    env:
+      CLICKHOUSE_SELECTED_RELEASE: ${{ matrix.release }}
+      CLICKHOUSE_IMAGE: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -135,11 +159,13 @@ jobs:
           cache: pip
       - run: python -m venv .venv
       - run: .venv/bin/python -m pip install --upgrade pip
-      - run: .venv/bin/python -m pip install -e ".[test]"
+      - run: mkdir -p build/evidence
+      - run: .venv/bin/python -m pip install ".[test]" --report build/evidence/installation.json
+      - run: .venv/bin/python -m pip check
       - run: ./scripts/run-cluster-conformance.sh
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: replicated-engine-evidence
-          path: build/evidence/replicated.json
+          name: replicated-${{ matrix.release }}-engine-evidence
+          path: build/evidence/*
           if-no-files-found: error
