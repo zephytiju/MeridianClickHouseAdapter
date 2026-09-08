@@ -104,7 +104,7 @@ def test_probe_and_physical_verification_are_deterministic(layout) -> None:  # t
 def test_probe_rejects_version_functions_topology_and_metadata(layout) -> None:  # type: ignore[no-untyped-def]
     settings = ClickHouseSettings.from_binding(build_binding(layout))
     wrong_version = FakeClient(layout, version="24.8.1.1")
-    with pytest.raises(CompatibilityError, match="version"):
+    with pytest.raises(CompatibilityError, match="deployment release drift"):
         probe_adapter(wrong_version, settings, selected_engine_version="25.3")
 
     missing_function = FakeClient(layout)

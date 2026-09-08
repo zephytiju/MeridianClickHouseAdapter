@@ -31,6 +31,8 @@ class ClickHouseClient(Protocol):
         query: str,
         parameters: Mapping[str, Any] | None = None,
         settings: Mapping[str, Any] | None = None,
+        *,
+        column_formats: Mapping[str, str] | None = None,
     ) -> QueryResult: ...
 
     def insert(

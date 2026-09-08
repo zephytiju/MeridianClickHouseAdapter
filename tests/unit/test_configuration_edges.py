@@ -37,7 +37,6 @@ def test_endpoint_parsing_accepts_only_matching_origins() -> None:
     [
         ("adapter_id", "meridian.storage.other", "does not select"),
         ("adapter_contract", "2.0.0", "exactly 1.0.0"),
-        ("engine_version", "26.1", "not supported"),
         ("engine_profile", "clickhouse-future", "standalone or replicated"),
         ("endpoint", None, "resolve serviceRef"),
         ("physical_namespace", "unsafe; DROP DATABASE", "physical identifier"),

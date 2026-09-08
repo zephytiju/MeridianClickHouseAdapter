@@ -10,7 +10,7 @@ Catalogs and never sees this Binding.
 - `adapterId`: exactly `meridian.storage.clickhouse`
 - `adapterContract`: exactly `1.0.0`
 - `engineProfile`: `clickhouse-standalone` or `clickhouse-replicated`
-- `engineVersion`: exactly `25.3` for adapter release 1.0.0
+- `engineVersion`: deployment-selected nonempty server release; for example `25.3` or an exact observed release. Historical tested releases are not an allowlist. The authenticated server must match this declared deployment expectation (exactly, or as a dotted patch of a selected release line).
 - `physicalNamespace`: an existing ClickHouse database identifier
 - `endpoint`: an HTTP(S) origin resolved from the deployment-owned `serviceRef`
 - `requiredCapabilityFingerprint`: the authenticated manifest pin

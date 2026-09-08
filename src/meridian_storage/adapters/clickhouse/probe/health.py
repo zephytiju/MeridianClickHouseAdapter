@@ -28,7 +28,9 @@ def probe_adapter(
         _incompatible("ClickHouse identity probe did not return one row")
     actual_version, timezone = (str(item) for item in identity.result_rows[0])
     if not _version_matches(actual_version, selected_engine_version):
-        _incompatible("ClickHouse server version differs from the Binding Engine version")
+        _incompatible(
+            "ClickHouse deployment release drift: observed server differs from Binding selection"
+        )
     if timezone not in {"UTC", "Etc/UTC"}:
         _incompatible("ClickHouse server timezone must be UTC")
     required = settings.required_functions
@@ -56,6 +58,8 @@ def probe_adapter(
         manifest,
         {
             "actualEngineVersion": actual_version,
+            "selectedEngineVersion": selected_engine_version,
+            "releaseEvidence": "unverified; consult exact conformance reports",
             "functionCount": str(len(found)),
             "layoutCount": str(len(settings.layouts)),
             "migrationAuthority": "external-iac-job",
@@ -63,6 +67,7 @@ def probe_adapter(
             "timezone": timezone,
             "topology": settings.topology.value,
         },
+        observed_engine_version=actual_version,
     )
 
 

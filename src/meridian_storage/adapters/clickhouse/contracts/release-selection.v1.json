@@ -1,0 +1,34 @@
+{
+  "combinations": [
+    {
+      "descriptorFingerprint": "sha256:85c135022c7219450728a8f87fbfc4d375a1c2576920cf998b9891252dd5d2aa",
+      "layoutFingerprint": "sha256:952fdc7c98da22a03a0f0e06ffcb244b536a360d8f79fdceba8cb85585bf900f",
+      "manifestFingerprint": "sha256:3e8ae60a11b10e19a1267561c53e8258b3b95db03d007285a456d3e02e5e7f16",
+      "profile": "clickhouse-standalone",
+      "selectedEngineVersion": "25.3"
+    },
+    {
+      "descriptorFingerprint": "sha256:85c135022c7219450728a8f87fbfc4d375a1c2576920cf998b9891252dd5d2aa",
+      "layoutFingerprint": "sha256:952fdc7c98da22a03a0f0e06ffcb244b536a360d8f79fdceba8cb85585bf900f",
+      "manifestFingerprint": "sha256:9a07e9be3b23ead1075929f6d174b0eb20dad88f53eb047a8c243e8be0cc1aa7",
+      "profile": "clickhouse-standalone",
+      "selectedEngineVersion": "25.8"
+    },
+    {
+      "descriptorFingerprint": "sha256:73249ccdb1b1954fdf5931555f6023352a7f2c615247921c145f1c5daedc5a03",
+      "layoutFingerprint": "sha256:ecf51253bdba9daf68b4fc81f924b366f54f69b5685c09cd91fdf2f0aba1c0f4",
+      "manifestFingerprint": "sha256:5c081a8bccc007412a5aac5ff3e881862a48507e9fee30c68cdca0b7652e6a1e",
+      "profile": "clickhouse-replicated",
+      "selectedEngineVersion": "25.3"
+    },
+    {
+      "descriptorFingerprint": "sha256:73249ccdb1b1954fdf5931555f6023352a7f2c615247921c145f1c5daedc5a03",
+      "layoutFingerprint": "sha256:ecf51253bdba9daf68b4fc81f924b366f54f69b5685c09cd91fdf2f0aba1c0f4",
+      "manifestFingerprint": "sha256:711bba9938d64e6aae0b2f536410afb84b7532650d9741a9acc59f5f3d1e17ac",
+      "profile": "clickhouse-replicated",
+      "selectedEngineVersion": "25.8"
+    }
+  ],
+  "evidenceClass": "canonical-metadata-only",
+  "format": "meridian.clickhouse.release-selection-fixtures@1.0.0"
+}

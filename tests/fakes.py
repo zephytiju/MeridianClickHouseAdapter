@@ -39,6 +39,8 @@ class FakeClient:
         query: str,
         parameters: Mapping[str, Any] | None = None,
         settings: Mapping[str, Any] | None = None,
+        *,
+        column_formats: Mapping[str, str] | None = None,
     ) -> FakeResult:
         if query.startswith("SELECT version()"):
             return FakeResult(("version", "timezone"), ((self.version, self.timezone),))

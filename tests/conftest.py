@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 
 import pytest
@@ -162,7 +163,11 @@ def build_create_context(
     password: str = "password",
 ) -> AdapterCreateContext:
     return AdapterCreateContext(
-        build_binding(layout, endpoint=endpoint),
+        build_binding(
+            layout,
+            endpoint=endpoint,
+            engine_version=os.environ.get("CLICKHOUSE_SELECTED_RELEASE", "25.3"),
+        ),
         SecretValue(username.encode()),
         SecretValue(password.encode()),
     )

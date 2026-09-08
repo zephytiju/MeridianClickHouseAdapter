@@ -1,0 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<clickhouse>
+  <storage_configuration><disks><backups><type>local</type><path>/var/lib/clickhouse/backups/</path></backups></disks></storage_configuration>
+  <backups><allowed_disk>backups</allowed_disk></backups>
+</clickhouse>

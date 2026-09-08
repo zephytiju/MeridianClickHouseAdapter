@@ -326,3 +326,107 @@ def test_usage_decimal_round_trip(real_engine, name: str) -> None:  # type: igno
     finally:
         session.close()
         runtime.close()
+
+
+def test_standalone_restart_and_real_backup_restore(real_engine) -> None:
+    from tests.recovery import backup_restore, compose
+
+    endpoint, client, layout = real_engine
+    table = layout.qualified_table("meridian_adapter_test")
+    expected = client.query(f"SELECT count() FROM {table} FINAL").result_rows
+    assert expected[0][0] > 0
+    compose("restart", "clickhouse")
+    recovered = _wait_client(int(endpoint.rsplit(":", 1)[1]))
+    try:
+        assert recovered.query(f"SELECT count() FROM {table} FINAL").result_rows == expected
+        backup_restore(recovered, layout, "standalone")
+    finally:
+        recovered.close()
+
+
+@pytest.mark.parametrize("profile", ["log", "span", "metric"])
+def test_telemetry_fields_round_trip(real_engine, profile) -> None:
+    from dataclasses import replace
+
+    from meridian_storage.semantics import (
+        CatalogName,
+        FieldDefinition,
+        LogicalKind,
+        LogicalType,
+        SchemaReference,
+        canonical_json_bytes,
+    )
+
+    from meridian_storage import ResourceRef
+
+    endpoint, client, _ = real_engine
+    schema = build_schema()
+    schema = replace(
+        schema,
+        ref=SchemaReference(
+            CatalogName("evidence"), "observability", profile + "_fidelity", "1.0.0"
+        ),
+        fields=(
+            *schema.fields,
+            FieldDefinition("trace_id", LogicalType(LogicalKind.BYTES)),
+            FieldDefinition("span_id", LogicalType(LogicalKind.BYTES)),
+            FieldDefinition("payload", LogicalType(LogicalKind.JSON)),
+        ),
+    )
+    compilation = ClickHouseSchemaCompiler().compile(
+        database="meridian_adapter_test",
+        resource=ResourceRef("evidence", "observability", profile + "_fidelity"),
+        resource_fingerprint=RESOURCE_FINGERPRINT,
+        schema=schema,
+        record_profile=profile,
+    )
+    layout = compilation.layout
+    context = build_create_context(
+        layout, endpoint=endpoint, username="meridian", password="meridian-test"
+    )
+    settings = ClickHouseSettings.from_binding(context.binding)
+    ClickHouseMigrator(client, settings).apply(
+        plan_initial_migration(profile + "-fidelity", (compilation,))
+    )
+    record = {
+        **sample_record(observed_at="2026-09-07T00:00:00.123456Z"),
+        "trace_id": "//79/Pv6+fj39vX08/Lx8A==",
+        "span_id": "AAECAwQFBgc=",
+        "payload": {
+            "resource": {"service.name": "checkout", "replicas": 3, "healthy": True},
+            "scope": {"name": "example", "version": "1.2.3"},
+            "body": "order accepted",
+            "events": [{"name": "accepted", "attributes": {"n": 1}}],
+            "links": [{"traceId": "linked-trace"}],
+            "histogram": {"bounds": [1, 2], "counts": [2, 3, 1], "sum": 8.5},
+            "exemplars": [{"value": 1.5, "traceId": "example-trace"}],
+        },
+    }
+    runtime = ClickHouseAdapterFactory().create(context)
+    runtime.open()
+    session = runtime.open_session(transactional=False)
+    try:
+        request = build_request(layout, records=[record], scope={"suite": profile})
+        first = session.execute(request)
+        assert session.execute(request).data["batchId"] == first.data["batchId"]
+        query = replace(
+            request,
+            operation=replace(
+                request.operation,
+                operation_contract="meridian.evidence.query",
+                read_only=True,
+                input={
+                    "where": {
+                        "observed_at": {"gte": "2026-09-07T00:00:00Z", "lt": "2026-09-08T00:00:00Z"}
+                    },
+                    "limit": 10,
+                },
+            ),
+        )
+        rows = session.execute(query).data["items"]
+        assert len(rows) == 1
+        for field in ("trace_id", "span_id", "payload", "observed_at"):
+            assert canonical_json_bytes(rows[0][field]) == canonical_json_bytes(record[field])
+    finally:
+        session.close()
+        runtime.close()

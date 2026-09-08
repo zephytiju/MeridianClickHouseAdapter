@@ -235,3 +235,82 @@ def test_released_query_planner_contract_compiles_natively(layout) -> None:  # t
     context = plan.translation_context(scope_fingerprint="sha256:" + "3" * 64)
     compiled = assert_translation_contract(translator, plan, context)
     assert compiled.adapter_id == "meridian.storage.clickhouse"
+
+
+@pytest.mark.parametrize("wire", [False, True])
+def test_schema_directed_binary_and_json_result_normalization(wire):
+    from dataclasses import replace
+
+    from meridian_storage.query import Projection, ResultSpec
+    from meridian_storage.semantics import (
+        FieldDefinition,
+        LogicalKind,
+        LogicalType,
+        canonical_json_bytes,
+    )
+
+    from meridian_storage.adapters.clickhouse import ClickHouseSchemaCompiler
+    from tests.conftest import RESOURCE_FINGERPRINT, build_layout, build_schema
+
+    schema = build_schema()
+    schema = replace(
+        schema,
+        fields=(
+            *schema.fields,
+            FieldDefinition("binary", LogicalType(LogicalKind.BYTES)),
+            FieldDefinition("attributes", LogicalType(LogicalKind.JSON)),
+        ),
+    )
+    layout = (
+        ClickHouseSchemaCompiler()
+        .compile(
+            database="meridian_adapter_test",
+            resource=build_layout().resource,
+            resource_fingerprint=RESOURCE_FINGERPRINT,
+            schema=schema,
+            record_profile="metric",
+        )
+        .layout
+    )
+    settings = ClickHouseSettings.from_binding(build_binding(layout))
+    signer = CursorSigner({"k1": b"1" * 32}, active_key_id="k1")
+    translator = ClickHouseQueryTranslator(settings, signer)
+    logical = _logical_query(layout)
+    if wire:
+        logical = replace(
+            logical,
+            result=ResultSpec(
+                projection=(
+                    Projection(Field("binary"), "id"),
+                    Projection(Field("attributes"), "payload"),
+                )
+            ),
+        )
+        compiled = translator.compile_wire(logical, _translation(layout, logical.fingerprint))
+        names = ("id", "payload")
+    else:
+        compiled = compile_simple_query(
+            "query",
+            {
+                "where": {
+                    "observed_at": {"gte": "2026-08-25T00:00:00Z", "lt": "2026-08-26T00:00:00Z"}
+                },
+                "select": ["binary", "attributes"],
+            },
+            layout,
+            _translation(layout, logical.fingerprint),
+            settings,
+            signer,
+        )
+        names = ("binary", "attributes")
+    assert compiled.command["columnFormats"] == {names[0]: "bytes"}
+    result = translator.normalize_result(
+        compiled,
+        SimpleNamespace(
+            column_names=names,
+            result_rows=[(b"\xff\x00", '{"typed":[true,1,null]}')],
+        ),
+    )
+    assert canonical_json_bytes(result.operation_data()["items"]) == canonical_json_bytes(
+        [{names[0]: "/wA=", names[1]: {"typed": [True, 1, None]}}]
+    )
