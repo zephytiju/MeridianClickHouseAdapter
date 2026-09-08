@@ -5,6 +5,14 @@
 All notable changes to this project are documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## 1.1.1
+
+- Repair physical row-fingerprint keyset comparison for native FixedString bytes,
+  preventing repeated or omitted telemetry page boundaries. Preserve both
+  existing signed cursor representations and all validation gates.
+- Add real-engine log/span/metric pagination with timestamp and identity ties,
+  fingerprint prefixes 0/f, binary payloads and historical cursor continuation.
+
 ## 1.1.0
 
 - Separate deployment-selected releases and authenticated observations from historical descriptor metadata.

@@ -94,7 +94,7 @@ jobs:
           wheel-smoke/bin/python -m pip install "${wheel}[test]"
           wheel-smoke/bin/python -m pip check
           wheel-smoke/bin/python -m pytest tests/unit tests/contract
-          wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.1.0'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
+          wheel-smoke/bin/python -c "from importlib.metadata import entry_points, version; import meridian_storage.adapters.clickhouse as package; assert package.__version__ == version('meridian-storage-clickhouse') == '1.1.1'; assert any(item.name == 'clickhouse' for item in entry_points(group='meridian_storage.adapters'))"
       - uses: actions/upload-artifact@v7
         with:
           name: distributions
